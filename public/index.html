@@ -1,45 +1,45 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="./style.css">
-  <title>Discogs Collection Fetcher</title>
-</head>
-<body>
-  <h1>Discogs Collection Viewer</h1>
-  <form id="form">
-    <input type="text" name="user_input" placeholder="Discogs username" required />
-    <button type="submit">Fetch Collection</button>
-  </form>
-  <p id="message"></p>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/style.css">
+    <title>Discogs Collection Fetcher</title>
+  </head>
+  <body>
+    <h1>Discogs Collection Viewer</h1>
+    <form id="form">
+      <input type="text" name="user_input" placeholder="Discogs username" required />
+      <button type="submit">Fetch Collection</button>
+    </form>
+    <p id="message"></p>
 
-  <script>
-    const form = document.getElementById("form");
-    const message = document.getElementById("message");
+    <script>
+      const form = document.getElementById("form");
+      const message = document.getElementById("message");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      message.textContent = "Submitting...";
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        message.textContent = "Submitting...";
 
-      const formData = new URLSearchParams();
-      formData.append("user_input", form.user_input.value.trim());
+        const formData = new URLSearchParams();
+        formData.append("user_input", form.user_input.value.trim());
 
-      const res = await fetch("/", { method: "POST", body: formData });
-      const data = await res.json();
+        const res = await fetch("/", { method: "POST", body: formData });
+        const data = await res.json();
 
-      message.textContent = data.message;
+        message.textContent = data.message;
 
-      if (data.success) {
-        const username = data.unique_id;
-        const poll = setInterval(async () => {
-          const status = await fetch(`/task_status/${username}`).then(r => r.json());
-          if (status.completed) {
-            clearInterval(poll);
-            window.location.href = `/table/${username}`;
-          }
-        }, 2000);
-      }
-    });
-  </script>
-</body>
+        if (data.success) {
+          const username = data.unique_id;
+          const poll = setInterval(async () => {
+            const status = await fetch(`/task_status/${username}`).then(r => r.json());
+            if (status.completed) {
+              clearInterval(poll);
+              window.location.href = `/table/${username}`;
+            }
+          }, 2000);
+        }
+      });
+    </script>
+  </body>
 </html>
