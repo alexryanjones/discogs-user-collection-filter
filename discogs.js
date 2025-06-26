@@ -2,6 +2,11 @@ import fetch from 'node-fetch';
 import pLimit from 'p-limit';
 const limit = pLimit(5);
 
+const headers = {
+  'User-Agent': 'DiscogsCollectionFetcher/1.0',
+  Authorization: 'Discogs token=cGNKYHedzKdNpsILQludYQbcsRfFqDtDhxnIJqvG',
+};
+
 async function fetchWithRetry(url, headers = {}, retries = 5, delay = 1000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -28,11 +33,6 @@ async function fetchWithRetry(url, headers = {}, retries = 5, delay = 1000) {
 
 export async function fetchCollection(username) {
   try {
-    const headers = {
-      'User-Agent': 'DiscogsCollectionFetcher/1.0',
-      Authorization: 'Discogs token=cGNKYHedzKdNpsILQludYQbcsRfFqDtDhxnIJqvG',
-    };
-
     const firstUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?page=1&per_page=100`;
     const res = await fetch(firstUrl, { headers });
     const data = await res.json();
@@ -61,6 +61,7 @@ export async function fetchCollection(username) {
         const info = item.basic_information;
 
         items.push({
+          id: info.id,
           artist: info.artists?.map((a) => a.name).join(', ') || '',
           title: info.title || '',
           year: info.year || '',
@@ -69,7 +70,7 @@ export async function fetchCollection(username) {
           genre: (info.genres || []).join(', '),
           style: (info.styles || []).join(', '),
           image: info.cover_image || '',
-          url: info.resource_url.replace('api.', '') || '',
+          url: `https://discogs.com/release/${info.id.toString()}` || '',
         });
       }
     }

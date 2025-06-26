@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script src="/table_script.js" defer></script>
     <link rel="stylesheet" href="/style.css">
     <meta charset="UTF-8" />
     <title>Discogs Collection Grid</title>
@@ -8,86 +9,17 @@
   <body>
     <h1 id="collectionTitle">Collection</h1>
     <div class="styleFilter">
+
       <strong>Filter by Style:</strong>
-      <div id="styleCheckboxes" style="margin: 0.5rem 0;"></div>
+      <div id="styleCheckboxes"></div>
 
       <label>
         <input type="checkbox" id="filterMode" />
         Require all selected styles (AND mode)
       </label>
+
     </div>
+    <button id="open10">Open 10</button>
     <div class="grid" id="grid"></div>
-
-    <script>
-      const parts = window.location.pathname.split('/');
-      const username = parts[parts.length - 1];
-
-      const collectionTitle = document.getElementById('collectionTitle');
-
-      fetch(`/table_data/${username}`)
-        .then(res => res.json())
-        .then(({ headers, data, username }) => {
-          collectionTitle.textContent = `${username}'s Collection`;
-          const keys = headers;
-          const items = data.map(row => Object.fromEntries(keys.map((k, i) => [k, row[i]])));
-
-          const grid = document.getElementById('grid');
-          const checkboxesContainer = document.getElementById('styleCheckboxes');
-          const filterMode = document.getElementById('filterMode');
-
-          const allStyles = new Set();
-          items.forEach(item => {
-            (item.style || '').split(',').map(s => s.trim()).forEach(s => {
-              if (s) allStyles.add(s);
-            });
-          });
-
-          [...allStyles].sort().forEach(style => {
-            const label = document.createElement('label');
-            label.innerHTML = `
-              <input type="checkbox" value="${style}" />
-              ${style}
-            `;
-            checkboxesContainer.appendChild(label);
-          });
-
-          function updateFilter() {
-            const selected = [...checkboxesContainer.querySelectorAll('input:checked')].map(cb => cb.value.toLowerCase());
-            const isAndMode = filterMode.checked;
-
-            const filtered = items.filter(item => {
-              const itemStyles = (item.style || '').toLowerCase().split(',').map(s => s.trim());
-              if (selected.length === 0) return true;
-
-              if (isAndMode) {
-                return selected.every(style => itemStyles.includes(style));
-              } else {
-                return selected.some(style => itemStyles.includes(style));
-              }
-            });
-
-            renderGrid(filtered);
-          }
-
-          function renderGrid(list) {
-            grid.innerHTML = '';
-            list.forEach(item => {
-              const div = document.createElement('div');
-              div.className = 'card';
-              div.innerHTML = `
-                <img src="${item.image}" alt="${item.title}" />
-                <h3>${item.title}</h3>
-                <p>${item.artist}</p>
-                <a href="${item.url}" target="_blank">View on Discogs</a>
-              `;
-              grid.appendChild(div);
-            });
-          }
-
-          checkboxesContainer.addEventListener('change', updateFilter);
-          filterMode.addEventListener('change', updateFilter);
-          renderGrid(items);
-        });
-    </script>
   </body>
 </html>
