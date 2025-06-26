@@ -15,14 +15,6 @@ form.addEventListener('submit', async (e) => {
 
   if (data.success) {
     const username = data.unique_id;
-    const poll = setInterval(async () => {
-      const status = await fetch(`/task_status/${username}`).then((r) =>
-        r.json()
-      );
-      if (status.completed) {
-        clearInterval(poll);
-        window.location.href = `/table/${username}`;
-      }
-    }, 2000);
+    window.location.href = `/table/${username}`;
   }
 });
