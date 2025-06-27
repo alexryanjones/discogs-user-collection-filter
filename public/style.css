@@ -3,6 +3,25 @@ body {
   margin: 2rem;
   background: #f9f9f9;
 }
+
+#loadedCount, #totalCount {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.progress-container {
+  width: 500px;
+  border: 1px solid grey;
+  border-radius: 6px;
+  height: 25px;
+}
+
+#progress-bar {
+  background-color: grey;
+  height: 100%;
+  max-width: 100%;
+}
+
 .styleFilter {
   margin: 25px 0;
 }

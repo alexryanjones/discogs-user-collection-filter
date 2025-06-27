@@ -1,47 +1,46 @@
 import fetch from 'node-fetch';
-import pLimit from 'p-limit';
-const limit = pLimit(5);
 
 const headers = {
   'User-Agent': 'DiscogsCollectionFetcher/1.0',
   Authorization: 'Discogs token=cGNKYHedzKdNpsILQludYQbcsRfFqDtDhxnIJqvG',
 };
 
-async function fetchWithRetry(url, headers = {}, retries = 5, delay = 1000) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const res = await fetch(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      const is429 = err.message.includes('429');
-      const retryAfter = is429 ? delay * (attempt + 1) : delay;
-
-      console.warn(`Fetch failed (${err.message}). Retrying in ${retryAfter}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, retryAfter));
-    }
-  }
-
-  throw new Error(`Failed to fetch ${url} after ${retries} retries.`);
-}
-
-export async function fetchCollection(username, onRecord) {
+export async function fetchCollection(username, onRecord, markPartialError, onPages) {
   const firstUrl = `https://api.discogs.com/users/${username}/collection/folders/0/releases?page=1&per_page=100`;
-  const firstPage = await fetchWithRetry(firstUrl, headers);
-  const totalPages = firstPage.pagination.pages;
+  const res = await fetch(firstUrl, { headers });
+  const json = await res.json();
+  const totalPages = json.pagination.pages;
+  onPages(json.pagination);
 
-  const allPages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const pageFetches = allPages.map((page) =>
-    limit(async () => {
+  for (let page = 1; page <= totalPages; page++) {
+    const url = `https://api.discogs.com/users/${username}/collection/folders/0/releases?page=${page}&per_page=100`;
+
+    let success = false;
+    let attempts = 0;
+
+    while (!success && attempts < 5) {
+      attempts++;
       try {
-        const res = await fetchWithRetry(
-          `https://api.discogs.com/users/${username}/collection/folders/0/releases?page=${page}&per_page=100`,
-          headers
-        );
+        const res = await fetch(url, { headers });
 
-        for (const item of res.releases) {
+        if (res.status === 429) {
+          const retryAfter = parseInt(
+            res.headers.get('Retry-After') || '5',
+            10
+          );
+          console.warn(
+            `Rate limited on page ${page}. Retrying in ${retryAfter}s...`
+          );
+          await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          continue;
+        }
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const json = await res.json();
+
+        for (const item of json.releases) {
           const info = item.basic_information;
           const record = {
             id: info.id,
@@ -58,11 +57,17 @@ export async function fetchCollection(username, onRecord) {
 
           onRecord(record);
         }
-      } catch (err) {
-        console.error(`Failed to fetch page ${page}:`, err.message);
-      }
-    })
-  );
 
-  await Promise.all(pageFetches);
+        success = true;
+      } catch (err) {
+        console.error(
+          `Failed to fetch page ${page} (attempt ${attempts}):`,
+          err.message
+        );
+         markPartialError();
+      }
+    }
+  }
+
+  console.log(`Finished fetching ${totalPages} pages for "${username}".`);
 }

@@ -3,8 +3,10 @@ const username = parts[parts.length - 1];
 
 let filteredItems = [];
 let allItems = [];
+let allItemsCount = 0;
 let openIndex = 0;
 let lastSeenIndex = 0;
+let error = false;
 
 const collectionTitle = document.getElementById('collectionTitle');
 const grid = document.getElementById('grid');
@@ -12,6 +14,10 @@ const checkboxesContainer = document.getElementById('styleCheckboxes');
 const filterMode = document.getElementById('filterMode');
 const openButton = document.getElementById('open10');
 const loadedCount = document.getElementById('loadedCount');
+const totalCount = document.getElementById('totalCount');
+const progress = document.getElementById('progress-bar');
+
+collectionTitle.textContent = `${username}'s Collection`;
 
 function transform(headers, rows) {
   return rows.map((row) =>
@@ -19,8 +25,14 @@ function transform(headers, rows) {
   );
 }
 
-function updateCounter() {
-  loadedCount.textContent = `Loaded ${allItems.length} records`;
+function updateTotal() {
+  totalCount.textContent = `${allItemsCount} records`;
+}
+
+function updateProgress() {
+  loadedCount.textContent = `Loaded ${allItems.length} of `;
+  const percent = Math.min((allItems.length / allItemsCount) * 100, 100);
+  progress.style.width = `${percent}%`;
 }
 
 function updateFilter() {
@@ -75,11 +87,13 @@ function next10() {
 }
 
 function updateStyleFilters() {
-  const existing = new Set(
-    [...checkboxesContainer.querySelectorAll('input')].map((cb) => cb.value)
+  const selectedValues = new Set(
+    [...checkboxesContainer.querySelectorAll('input:checked')].map(
+      (cb) => cb.value
+    )
   );
-  const allStyles = new Set();
 
+  const allStyles = new Set();
   allItems.forEach((item) => {
     (item.style || '')
       .split(',')
@@ -89,13 +103,20 @@ function updateStyleFilters() {
       });
   });
 
-  allStyles.forEach((style) => {
-    if (!existing.has(style)) {
+  checkboxesContainer.innerHTML = '';
+  [...allStyles]
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((style) => {
       const label = document.createElement('label');
-      label.innerHTML = `<input type="checkbox" value="${style}" /> ${style}`;
+      label.innerHTML = `<input type="checkbox" value="${style}" ${
+        selectedValues.has(style) ? 'checked' : ''
+      } /> ${style}`;
       checkboxesContainer.appendChild(label);
-    }
-  });
+    });
+
+  [...checkboxesContainer.querySelectorAll('input')].forEach((input) =>
+    input.addEventListener('change', updateFilter)
+  );
 }
 
 async function poll() {
@@ -125,15 +146,18 @@ async function poll() {
 
     filteredItems.push(...newFiltered);
     renderNewItems(newFiltered);
-    updateStyleFilters();
-    updateCounter();
-    openButton.disabled = filteredItems.length === 0;
   }
+  updateStyleFilters();
+  updateProgress();
+  openButton.disabled = filteredItems.length === 0;
 
   const status = await fetch(`/task_status/${username}`).then((r) => r.json());
-  if (!status.completed) {
-    setTimeout(poll, 100);
-  }
+  if (status.items !== allItemsCount) {
+    allItemsCount = status.items;
+    updateTotal();
+  };
+  if (!status.completed) poll();
+  if (!status.error) error = true;
 }
 
 checkboxesContainer.addEventListener('change', updateFilter);

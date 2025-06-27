@@ -18,17 +18,16 @@ app.post('/', (req, res) => {
 
   const key = username.toLowerCase();
   RESULTS[key] = [];
-  TASKS_STATUS[key] = { completed: false };
+  TASKS_STATUS[key] = { completed: false, partial: false, items: 0 };
 
-  fetchCollection(username, (record) => {
-    RESULTS[key].push(record);
-  })
-    .then(() => {
-      TASKS_STATUS[key].completed = true;
-    })
-    .catch(() => {
-      TASKS_STATUS[key] = { completed: false, error: true };
-    });
+  fetchCollection(
+    username,
+    (record) => RESULTS[key].push(record),
+    () => TASKS_STATUS[key].partial = true,
+    (pages) => TASKS_STATUS[key].items = pages.items
+  ).then(() => {
+    TASKS_STATUS[key].completed = true;
+  });
 
   res.json({
     success: true,
@@ -45,7 +44,11 @@ app.get('/task_status/:username', (req, res) => {
   const username = req.params.username.toLowerCase();
   const status = TASKS_STATUS[username];
   if (!status) return res.status(404).json({ error: 'Invalid task ID' });
-  res.json({ completed: status.completed });
+  res.json({
+    completed: status.completed,
+    error: status.error,
+    items: status.items,
+  });
 });
 
 app.get('/table_data/:username', (req, res) => {
