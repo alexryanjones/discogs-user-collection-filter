@@ -7,24 +7,38 @@
     <title>Discogs Collection Grid</title>
   </head>
   <body>
-    <h1 id="collectionTitle">Collection</h1>
-    <p id="loadedCount">Loaded 0 of </p>
-    <p id="totalCount">0 records</p>
-    <div class="progress-container">
-      <div id="progress-bar"></div>
+    <div id="empty-collection" class="message">
+      <p>This user hasn't collected any records</p>
     </div>
-    <div class="styleFilter">
-
-      <strong>Filter by Style:</strong>
-      <div id="styleCheckboxes"></div>
-
-      <label>
-        <input type="checkbox" id="filterMode" />
-        Require all selected styles (AND mode)
-      </label>
-
+    <div id="private-collection" class="message">
+      <p>This user's collection is set to private</p>
     </div>
-    <button id="open10">Open 10</button>
-    <div class="grid" id="grid"></div>
+     <p id="message"></p>
+     <h1 id="collection-title">Collection</h1>
+     <div id="collection">
+       <p id="loaded-count">Loaded 0 of </p>
+       <p id="total-count">0 records</p>
+       <div class="progress-container">
+         <div id="progress-bar"></div>
+       </div>
+       <div class="style-filter">
+   
+         <strong>Filter by Style:</strong>
+         <div id="style-checkboxes"></div>
+   
+         <label>
+           <input type="checkbox" id="filterMode" />
+           Require all selected styles (AND mode)
+         </label>
+   
+       </div>
+       <div id="pagination-controls" class="pagination">
+        <button id="prev-page">Previous</button>
+        <span id="page-indicator">Page 1</span>
+        <button id="next-page">Next</button>
+      </div>
+       <button id="open10">Open 10</button>
+       <div class="grid" id="grid"></div>
+     </div>
   </body>
 </html>

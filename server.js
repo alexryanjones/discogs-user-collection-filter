@@ -8,26 +8,45 @@ const PORT = 3000;
 const TASKS_STATUS = {};
 const RESULTS = {};
 
+let username = '';
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.post('/', (req, res) => {
-  const username = req.body.user_input?.trim();
+  username = req.body.user_input?.trim();
   if (!username)
     return res.json({ success: false, message: 'Enter a username' });
 
   const key = username.toLowerCase();
   RESULTS[key] = [];
-  TASKS_STATUS[key] = { completed: false, partial: false, items: 0 };
+  TASKS_STATUS[key] = {
+    fetching: true,
+    received: false,
+    completed: false,
+    error: false,
+    private: false,
+    empty: false,
+    totalItems: 0,
+    currentCount: 0
+  };
 
   fetchCollection(
     username,
-    (record) => RESULTS[key].push(record),
-    () => TASKS_STATUS[key].partial = true,
-    (pages) => TASKS_STATUS[key].items = pages.items
-  ).then(() => {
-    TASKS_STATUS[key].completed = true;
-  });
+    (record) => {
+      RESULTS[key].push(record);
+      if (TASKS_STATUS[key].received !== true) TASKS_STATUS[key].received = true;
+    },
+    () => TASKS_STATUS[key].error = true,
+    (pages) => {
+      TASKS_STATUS[key].private = pages.private;
+      TASKS_STATUS[key].totalItems = pages.items;
+      TASKS_STATUS[key].empty = !pages.private && pages.items === 0
+    }).then(() => {
+      TASKS_STATUS[key].completed = true;
+      TASKS_STATUS[key].fetching = false;
+      console.log(`Fetched ${RESULTS[key].length} records for "${username}, of ${TASKS_STATUS[key].totalItems} expected"`);
+    });
 
   res.json({
     success: true,
@@ -41,13 +60,19 @@ app.get('/table/:username', (req, res) => {
 });
 
 app.get('/task_status/:username', (req, res) => {
-  const username = req.params.username.toLowerCase();
-  const status = TASKS_STATUS[username];
+  const key = req.params.username.toLowerCase();
+  const status = TASKS_STATUS[key];
   if (!status) return res.status(404).json({ error: 'Invalid task ID' });
+
   res.json({
+    fetching: status.fetching,
+    received: status.received,
     completed: status.completed,
     error: status.error,
-    items: status.items,
+    private: status.private,
+    empty: status.empty,
+    totalItems: status.totalItems,
+    currentCount: RESULTS[key].length,
   });
 });
 
@@ -63,17 +88,6 @@ app.get('/table_data/:username', (req, res) => {
   const data = records.slice(fromIndex, fromIndex + limit).map((r) => Object.values(r));
 
   res.json({ headers, data, username });
-});
-
-app.get('/records_since/:username/:index', (req, res) => {
-  const username = req.params.username.toLowerCase();
-  const from = parseInt(req.params.index, 10) || 0;
-
-  const all = RESULTS[username];
-  if (!all) return res.json({ records: [] });
-
-  const newRecords = all.slice(from);
-  res.json({ records: newRecords });
 });
 
 app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));

@@ -4,7 +4,24 @@ body {
   background: #f9f9f9;
 }
 
-#loadedCount, #totalCount {
+#collection {
+  display: none;
+}
+
+.message {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+  color: black;
+}
+
+#loaded-count, #total-count {
   display: inline-block;
   vertical-align: middle;
 }
@@ -22,10 +39,11 @@ body {
   max-width: 100%;
 }
 
-.styleFilter {
+.style-filter {
   margin: 25px 0;
 }
-#styleCheckboxes {
+
+#style-checkboxes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.5rem 1.5rem;
@@ -37,7 +55,7 @@ body {
   padding: 1rem;
 }
 
-#styleCheckboxes label {
+#style-checkboxes label {
   display: flex;
   align-items: center;
   margin-right: 1rem;
@@ -45,17 +63,20 @@ body {
   font-size: 0.9rem;
   white-space: nowrap;
 }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
 }
+
 .card img {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 4px;
 }
+
 .card img {
   width: 100%;
   height: auto;
@@ -80,5 +101,13 @@ body {
 }
 
 #open10 {
+  margin: 1rem 0;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
   margin: 1rem 0;
 }
