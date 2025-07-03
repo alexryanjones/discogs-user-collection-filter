@@ -11,7 +11,7 @@ let collectionShown = false;
 let firstRender = true;
 
 let currentPage = 0;
-const pageSize = 250;
+const pageSize = 40;
 
 const collection = document.getElementById('collection');
 const collectionTitle = document.getElementById('collection-title');
@@ -26,6 +26,7 @@ const empty = document.getElementById('empty-collection');
 const private = document.getElementById('private-collection');
 const prevPage = document.getElementById('prev-page');
 const nextPage = document.getElementById('next-page');
+const searchBox = document.getElementById('searchBox');
 
 collectionTitle.textContent = `${username}'s Collection`;
 
@@ -57,31 +58,6 @@ function showEmptyCollection() {
 
 function showPrivateCollection() {
   private.style.display = 'flex';
-}
-
-function updateFilter() {
-  const selected = [
-    ...checkboxesContainer.querySelectorAll('input:checked'),
-  ].map((cb) => cb.value.toLowerCase());
-  const isAnd = filterMode.checked;
-
-  filteredItems = allItems.filter((item) => {
-    const itemStyles = (item.style || '')
-      .toLowerCase()
-      .split(',')
-      .map((s) => s.trim());
-    if (selected.length === 0) return true;
-
-    return isAnd
-      ? selected.every((style) => itemStyles.includes(style))
-      : selected.some((style) => itemStyles.includes(style));
-  });
-
-  openIndex = 0;
-  grid.innerHTML = '';
-  currentPage = 0;
-  renderCurrentPage();
-  openButton.disabled = filteredItems.length === 0;
 }
 
 function next10() {
@@ -186,13 +162,45 @@ function handleNewRecords(records) {
       : selected.some((style) => elementStyles.includes(style));
   });
 
-  filteredItems.push(...newFiltered);
-  if (filteredItems.length === newFiltered.length) updateStyleFilters();
+  updateStyleFilters();
   updateProgress();
-  if (firstRender) {
-    renderCurrentPage();
-    firstRender = false;
-  }
+  updateFilter();
+  firstRender = false;
+  openButton.disabled = filteredItems.length === 0;
+}
+
+function updateFilter() {
+  const selected = [
+    ...checkboxesContainer.querySelectorAll('input:checked'),
+  ].map((cb) => cb.value.toLowerCase());
+  const isAnd = filterMode.checked;
+  const searchTerm = searchBox.value.toLowerCase().trim();
+
+  filteredItems = allItems.filter((item) => {
+    const itemStyles = (item.style || '')
+      .toLowerCase()
+      .split(',')
+      .map((s) => s.trim());
+    const matchesStyle =
+      selected.length === 0
+        ? true
+        : isAnd
+        ? selected.every((style) => itemStyles.includes(style))
+        : selected.some((style) => itemStyles.includes(style));
+
+    const matchesSearch =
+      !searchTerm ||
+      (item.title && item.title.toLowerCase().includes(searchTerm)) ||
+      (item.artist && item.artist.toLowerCase().includes(searchTerm)) ||
+      (item.label && item.label.toLowerCase().includes(searchTerm));
+
+    return matchesStyle && matchesSearch;
+  });
+
+  openIndex = 0;
+  grid.innerHTML = '';
+  currentPage = 0;
+  renderCurrentPage();
   openButton.disabled = filteredItems.length === 0;
 }
 
@@ -227,8 +235,10 @@ function renderCurrentPage() {
 checkboxesContainer.addEventListener('change', updateFilter);
 filterMode.addEventListener('change', updateFilter);
 openButton.addEventListener('click', next10);
+searchBox.addEventListener('input', updateFilter);
+
 nextPage.addEventListener('click', () => {
-  const maxPage = Math.floor(filteredItems.length / pageSize);
+  const maxPage = Math.ceil(filteredItems.length / pageSize) - 1;
   if (currentPage < maxPage) {
     currentPage++;
     renderCurrentPage();
